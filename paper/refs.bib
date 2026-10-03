@@ -28,26 +28,38 @@
   doi     = {10.1016/S0378-7788(00)00114-6}
 }
 
+
 @inproceedings{jimenezraboso2021,
-  author    = {Jim{\'e}nez-Raboso, Javier and Campoy-Nieves, Alejandro and
-               Manjavacas-Lucas, Antonio and G{\'o}mez-Romero, Juan and
-               Molina-Solana, Miguel},
-  title     = {Sinergym: A Building Simulation and Control Framework for Training
-               Reinforcement Learning Agents},
-  booktitle = {Proceedings of the 8th ACM International Conference on Systems for
-               Energy-Efficient Buildings, Cities, and Transportation (BuildSys)},
-  pages     = {319--323},
-  year      = {2021},
-  doi       = {10.1145/3486611.3488729}
+author = {Jim{\'e}nez-Raboso, Javier and Campoy-Nieves, Alejandro and Manjavacas-Lucas, Antonio and G{\'o}mez-Romero, Juan and Molina-Solana, Miguel},
+title = {Sinergym: a building simulation and control framework for training reinforcement learning agents},
+year = {2021},
+isbn = {9781450391146},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+url = {https://doi.org/10.1145/3486611.3488729},
+doi = {10.1145/3486611.3488729},
+abstract = {We introduce Sinergym, an open-source building simulation and control framework for training reinforcement learning agents. The proposed framework is compatible with EnergyPlus models and allows to implement Python-based controllers, facilitating reproducibility of experiments and generalization to multiple scenarios. A comparison between Sinergym and other existing libraries for building control is included. We describe its design and main functionalities, such as offering a diverse set of environments with different buildings, weather types and action spaces. The provided examples show the usage of the framework for benchmarking reinforcement learning methods for building control.},
+booktitle = {Proceedings of the 8th ACM International Conference on Systems for Energy-Efficient Buildings, Cities, and Transportation},
+pages = {319–323},
+numpages = {5},
+keywords = {buildings, control, reinforcement learning, simulation},
+location = {Coimbra, Portugal},
+series = {BuildSys '21}
 }
 
 @inproceedings{lowe2017,
-  author    = {Lowe, Ryan and Wu, Yi and Tamar, Aviv and Harb, Jean and
-               Abbeel, Pieter and Mordatch, Igor},
-  title     = {Multi-Agent Actor-Critic for Mixed Cooperative-Competitive Environments},
-  booktitle = {Advances in Neural Information Processing Systems (NeurIPS)},
-  volume    = {30},
-  year      = {2017}
+author = {Lowe, Ryan and Wu, Yi and Tamar, Aviv and Harb, Jean and Abbeel, Pieter and Mordatch, Igor},
+title = {Multi-agent actor-critic for mixed cooperative-competitive environments},
+year = {2017},
+isbn = {9781510860964},
+publisher = {Curran Associates Inc.},
+address = {Red Hook, NY, USA},
+abstract = {We explore deep reinforcement learning methods for multi-agent domains. We begin by analyzing the difficulty of traditional algorithms in the multi-agent case: Q-learning is challenged by an inherent non-stationarity of the environment, while policy gradient suffers from a variance that increases as the number of agents grows. We then present an adaptation of actor-critic methods that considers action policies of other agents and is able to successfully learn policies that require complex multi-agent coordination. Additionally, we introduce a training regimen utilizing an ensemble of policies for each agent that leads to more robust multi-agent policies. We show the strength of our approach compared to existing methods in cooperative as well as competitive scenarios, where agent populations are able to discover various physical and informational coordination strategies.},
+booktitle = {Proceedings of the 31st International Conference on Neural Information Processing Systems},
+pages = {6382–6393},
+numpages = {12},
+location = {Long Beach, California, USA},
+series = {NIPS'17}
 }
 
 @inproceedings{fujimoto2018,
@@ -72,10 +84,6 @@
   doi     = {10.21105/joss.04098}
 }
 
-% Note: the paper uses the ASHRAE 90.1 *prototype* OfficeMedium model. Deru et
-% al. describe the DOE commercial *reference* buildings, a related but separate
-% set. The PNNL prototype report (goel2014, below) is the more precise source;
-% consider citing it instead of, or next to, deru2011.
 @techreport{deru2011,
   author      = {Deru, Michael and Field, Kristin and Studer, Daniel and Benne, Kyle and
                  Griffith, Brent and Torcellini, Paul and Liu, Bing and Halverson, Mark and
@@ -86,18 +94,20 @@
   institution = {National Renewable Energy Laboratory},
   number      = {NREL/TP-5500-46861},
   address     = {Golden, CO},
-  year        = {2011}
+  year        = {2011},
+  doi         = {10.2172/1009264}
 }
 
 @techreport{goel2014,
-  author      = {Goel, Supriya and Athalye, Rahul A. and Wang, Weimin and Zhang, Jian and
-                 Rosenberg, Michael I. and Xie, Yulong and Hart, Philip R. and Mendon, Vrushali V.},
-  title       = {Enhancements to {ASHRAE} Standard 90.1 Prototype Building Models},
-  institution = {Pacific Northwest National Laboratory},
-  number      = {PNNL-23269},
-  address     = {Richland, WA},
-  year        = {2014}
-}
+  author       = {Goel, Supriya and Athalye, Rahul A. and Wang, Weimin and Zhang, Jian and Rosenberg, Michael I. and Xie, YuLong and Hart, Philip R. and Mendon, Vrushali V.},
+  title        = {Enhancements to ASHRAE Standard 90.1 Prototype Building Models},
+  institution  = {Pacific Northwest National Laboratory (PNNL), Richland, WA (United States)},
+  annote       = {This report focuses on enhancements to prototype building models used to determine the energy impact of various versions of ANSI/ASHRAE/IES Standard 90.1. Since the last publication of the prototype building models, PNNL has made numerous enhancements to the original prototype models compliant with the 2004, 2007, and 2010 editions of Standard 90.1. Those enhancements are described here and were made for several reasons: (1) to change or improve prototype design assumptions; (2) to improve the simulation accuracy; (3) to improve the simulation infrastructure; and (4) to add additional detail to the models needed to capture certain energy impacts from Standard 90.1 improvements. These enhancements impact simulated prototype energy use, and consequently impact the savings estimated from edition to edition of Standard 90.1.},
+  doi          = {10.2172/1129366},
+  url          = {https://www.osti.gov/biblio/1129366},
+  place        = {United States},
+  year         = {2014},
+  month        = {04}}
 
 @article{page1954,
   author  = {Page, E. S.},
@@ -108,4 +118,86 @@
   pages   = {100--115},
   year    = {1954},
   doi     = {10.1093/biomet/41.1-2.100}
+}
+
+% ---- Added in revision 3 (related work) ----
+
+@misc{nazemi2025,
+  author       = {Nazemi, Seyyed Danial and Jafari, Mohsen A. and Matta, Andrea},
+  title        = {Active Inference for Energy Control and Planning in Smart Buildings
+                  and Communities},
+  howpublished = {arXiv preprint arXiv:2503.18161},
+  year         = {2025},
+  doi          = {10.48550/arXiv.2503.18161}
+}
+
+@article{campoynieves2025,
+  author  = {Campoy-Nieves, Alejandro and Manjavacas, Antonio and
+             Jim{\'e}nez-Raboso, Javier and Molina-Solana, Miguel and
+             G{\'o}mez-Romero, Juan},
+  title   = {{Sinergym} -- A Virtual Testbed for Building Energy Optimization with
+             Reinforcement Learning},
+  journal = {Energy and Buildings},
+  volume  = {327},
+  pages   = {115075},
+  year    = {2025},
+  doi     = {10.1016/j.enbuild.2024.115075}
+}
+
+@article{zhan2025,
+  author  = {Zhan, Lei and Li, Guannan and Xu, Chengliang and Zhang, Le and
+             Xiao, Zhun and Li, Qiang and Liu, Sining and Li, Weiyang},
+  title   = {Reinforcement Learning Based Optimal Control of Multiple Building
+             {HVAC} Systems and Analysis of Influencing Factors},
+  journal = {Journal of Building Engineering},
+  volume  = {115},
+  pages   = {114523},
+  year    = {2025},
+  doi     = {10.1016/j.jobe.2025.114523}
+}
+
+@article{bajrami2025,
+  author  = {Bajrami, Enes and Kulakov, Andrea and Zdravevski, Eftim and
+             Lameski, Petre},
+  title   = {A Comparative Analysis of {PPO} and {SAC} Algorithms for Energy
+             Optimization with Country-Level Energy Consumption Insights},
+  journal = {IFAC Journal of Systems and Control},
+  volume  = {34},
+  pages   = {100344},
+  year    = {2025},
+  doi     = {10.1016/j.ifacsc.2025.100344}
+}
+
+@article{qu2025,
+  author  = {Qu, Kaichen and Zhang, Hong and Zhou, Xin and Ferrando, Martina and
+             Causone, Francesco},
+  title   = {A Model-Based Reinforcement Learning Framework for Building Heating
+             Management with Branched Rollout Strategy and Time-Series Prediction Model},
+  journal = {Building Simulation},
+  volume  = {18},
+  number  = {7},
+  pages   = {1697--1716},
+  year    = {2025},
+  doi     = {10.1007/s12273-025-1288-9}
+}
+
+@article{kadamala2025,
+  author  = {Kadamala, Kevlyn and Chambers, Des and Barrett, Enda},
+  title   = {Improving {HVAC} Control with Transfer Learning: Using Padding
+             Techniques for Cross-Building Pre-Training and Fine-Tuning},
+  journal = {Energy and AI},
+  volume  = {21},
+  pages   = {100531},
+  year    = {2025},
+  doi     = {10.1016/j.egyai.2025.100531}
+}
+
+@misc{pge_b19,
+  author       = {{Pacific Gas and Electric Company}},
+  title        = {Electric Schedule {B-19}: Medium General Demand-Metered
+                  {TOU} Service},
+  howpublished = {Tariff book, PG\&E},
+  url          = {https://www.pge.com/tariffs/assets/pdf/tariffbook/ELEC_SCHEDS_B-19.pdf},
+  note         = {Accessed: Oct.~2026},
+  year         = {2026}
 }
