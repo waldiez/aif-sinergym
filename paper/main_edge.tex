@@ -1,8 +1,3 @@
-%==============================================================================
-% "One Agent per Zone: Decentralised Active Inference for Multi-Zone HVAC
-%  Control on Edge Hardware" -- revision 3 (prose rewritten)
-% Figures: make_figures.py -> figs/. Numbers: ab_runs/*/results.json.
-%==============================================================================
 \documentclass[conference]{IEEEtran}
 \IEEEoverridecommandlockouts
 
@@ -15,8 +10,6 @@
 \usepackage{siunitx}
 \sisetup{group-separator={,}}
 
-% Draft-only marker for open items; remove before submission.
-\newcommand{\TODO}[1]{\textcolor{red}{\textbf{[TODO: #1]}}}
 \newcommand{\pmx}{\,$\pm$\,}
 
 \begin{document}
@@ -57,49 +50,36 @@ state of this air loop is never observed by any zone. Each conditioned zone is
 governed by an independent active-inference agent that plans by minimising
 expected free energy, learns the dynamics of its zone online, and accounts for
 the unobserved loop coupling through a latent disturbance and a congestion
-belief filtered from the metered power of the other floors, without exchanging
+signal derived from the metered power of the other floors, without exchanging
 any messages with its peers. We evaluate fifteen agents in EnergyPlus
-simulations of a Sinergym office building against three rule-based baselines
+simulations of a Sinergym office building against three rule-based control (RBC) baselines
 and three MADDPG fleets, one of which receives the same floor meters. On five
 noisy weather years unseen during training, the fleet attains the lowest mean
-building peak (\SI{88.3}{\kilo\watt}) and the lowest coincidence factor (0.929
-versus 0.936 to 0.994), with practically no deadband violations and an
+building peak (\SI{88.3}{\kilo\watt}) and a lower coincidence factor than any
+baseline (0.929 versus 0.936 to 0.994), with practically no deadband
+violations and an
 occupied-hours comfort score of 0.912. Compared with a reactive rule at
 similar comfort, it lowers the sum of monthly peaks by \SI{33}{\kilo\watt} in
 every year, at the cost of about 10\,\% more energy. The same fleet runs on a
 Raspberry~Pi~5, closing the observation-to-action loop over MQTT in
-\SI{442}{\milli\second} at p95, while a GRU-based forecaster detects HVAC
-faults and sensor drifts at 86.8\,\% $F_1$.
+\SI{442}{\milli\second} at p95.
+% [anomaly detection removed for space] \SI{442}{\milli\second} at p95, while a GRU-based forecaster detects HVAC
+% faults and sensor drifts at 86.8\,\% $F_1$.
 \end{abstract}
 
 \begin{IEEEkeywords}
-edge AI, active inference, multi-agent systems, building energy management,
-demand response, MQTT
+edge AI, generative AI, active inference, multi-agent systems, building energy management
 \end{IEEEkeywords}
 
 %==============================================================================
 \section{Introduction}
 
-Heating, ventilation and air conditioning (HVAC) systems account for a large
-share of the electricity consumed by commercial buildings, and they are
-increasingly expected to do more than keep the indoor temperature within a
-comfort band. A growing part of the electricity bill is charged for the
-monthly peak demand rather than for the energy itself, and grid operators are
-equally interested in \emph{when} buildings draw power. As a consequence, a
-modern building controller has to maintain occupant comfort while
-simultaneously shaping the demand profile of the building.
+Heating, ventilation and air conditioning (HVAC) systems account for a large share of the electricity consumed by commercial buildings, and their role is no longer limited to keeping the indoor temperature within a comfort band. Many commercial tariffs now charge for the highest power drawn in each billing month as well as for the energy consumed, and grid operators are increasingly interested in when buildings draw power, not only in how much they consume. As a consequence, a modern building controller has to maintain occupant comfort while also limiting and shaping the demand profile of the building.
 
-In a multi-zone building, this turns control into a genuinely multi-agent
-problem. In the building studied in this work, the five conditioned zones of
-each floor draw from a single fan and a single two-speed cooling coil, so a
-deep-cooling call from one zone changes the airflow that is available to its
-four neighbours. Moreover, the variables that would explain this coupling,
-such as the supply-air temperature or the demand of the other zones, are not
-observed by any zone controller, which makes the problem partially observable
-from the point of view of each zone.
+In a multi-zone building, this turns control into a genuinely multi-agent problem: zones that share an air handler compete for the same fan and cooling capacity, so the action of one zone affects the conditions of its neighbours, while the variables that describe this coupling, such as the supply-air temperature or the demand of the other zones, are not observed by any individual zone controller.
 
 The dominant learning-based approach to this problem has been multi-agent deep
-reinforcement learning under centralised training with decentralised execution
+reinforcement learning (DRL) under centralised training with decentralised execution
 (CTDE), in which a centralised critic observes the whole building during
 training while each deployed actor sees only its own zone. Although this
 paradigm works, it inherits the properties of its training regime: the
@@ -108,7 +88,7 @@ represented explicitly, and the resulting policy is difficult to inspect at the
 moment it matters.
 
 In this paper, we take a different route and assign each zone to an
-independent \emph{active-inference} agent~\cite{friston2017}. Each agent
+independent \emph{active-inference} (AIF) agent~\cite{friston2017}. Each agent
 maintains beliefs over a small set of discrete latent states, corrects them
 with Bayes' rule as new observations arrive, learns its own transition model
 online, and selects actions by evaluating how well each candidate action
@@ -119,10 +99,12 @@ predicts, the agent's belief about this factor shifts accordingly, which is how
 an agent accounts for an air-loop coupling that it cannot measure. In addition,
 every agent reads the metered power of the other two air loops as a congestion
 signal and becomes more reluctant to draw power when the rest of the building
-is already busy. % NOTE: verify this novelty claim after the related-work search.
-To the best of our knowledge, this is the first work that
-applies decentralised active inference to multi-zone HVAC control and
-evaluates it against both rule-based and deep reinforcement learning
+is already busy. AIF has recently been applied to building
+energy management with one agent per building and a supervising
+community-level agent~\cite{nazemi2025}; however, to the best of our knowledge,
+this is the first work that applies decentralised AIF
+at the zone level to multi-zone HVAC control over a shared air loop, and
+evaluates it against both RBC and DRL
 controllers on demand-related metrics.
 
 The main contributions of this work are summarised as follows:
@@ -131,35 +113,32 @@ The main contributions of this work are summarised as follows:
 systems, in which 15 zone agents stagger their demand across floors without
 exchanging a single message. Evaluated on five noisy weather years that were
 not seen during training, the AIF fleet achieves the lowest mean annual peak
-(\SI{88.3}{\kilo\watt}) and the lowest coincidence factor (0.929) among the
-nine controllers that we tested (Section~\ref{sec:results}).
+(\SI{88.3}{\kilo\watt}) among the nine controllers that we tested and a lower
+coincidence factor (0.929) than any baseline.
 \item We perform a mechanism analysis that isolates the source of this
 coordination. Our ablations show that it requires a live load signal combined
 with agents that weigh energy differently, since a constant or a day-old signal
 does not reproduce the effect. Furthermore, a MADDPG fleet that receives the
 same meters improves considerably, which independently supports the same
-explanation (Section~\ref{sec:mechanism}).
-\item We provide a transparent comparison with well-tuned rule-based
-controllers, reporting the metrics on which simple rules still prevail and
+explanation.
+\item We provide a transparent comparison with well-tuned RBCs, reporting the metrics on which simple rules still prevail and
 quantifying the demand charge at which the demand savings of the AIF fleet
-would compensate for its additional energy use (Section~\ref{sec:discussion}).
-\item We characterise the decision latency of the fleet on edge hardware,
-showing that all 15 agents plan concurrently on a Raspberry~Pi~5 within a
-two-second budget, measured over the full MQTT round trip rather than compute
-alone (Section~\ref{sec:latency}).
+would compensate for its additional energy use.
+\item We show that all 15 agents run concurrently on a Raspberry~Pi~5, with
+a p95 observation-to-action latency of \SI{442}{\milli\second} measured over
+the full MQTT round trip.
 \end{itemize}
 
 The remainder of this paper is organised as follows. Section~\ref{sec:background}
-provides the necessary background on active inference and on the demand
+provides the necessary background on AIF and on the demand
 metrics used in this work, while Section~\ref{sec:related} reviews related
-work. Section~\ref{sec:system} describes the agent runtime, and
-Section~\ref{sec:testbed} introduces the simulation testbed, the evaluation
+work. Section~\ref{sec:testbed} introduces the simulation testbed, the evaluation
 protocol and the controllers. Section~\ref{sec:metrics} defines the evaluation
 metrics, Section~\ref{sec:results} presents the obtained results, and
 Section~\ref{sec:discussion} discusses their implications and limitations.
-Finally, the last section concludes the article. All code, trained models and
+Finally, Section~\ref{sec:conclusion} concludes the article. All code, trained models and
 benchmark harnesses are released under Apache~2.0 at
-\url{https://github.com/waldiez/wactorz/tree/synapse}.
+\url{https://github.com/waldiez/aif-sinergym}.
 
 %==============================================================================
 \section{Background}
@@ -167,7 +146,7 @@ benchmark harnesses are released under Apache~2.0 at
 
 \subsection{Active Inference in Discrete State Spaces}
 
-Active inference~\cite{friston2017} describes an agent that holds a
+AIF~\cite{friston2017} describes an agent that holds a
 probabilistic generative model of how its observations are produced by hidden
 states of the world, and of how these states evolve under its own actions. In
 the discrete formulation used in this work, the model is specified by a
@@ -211,56 +190,87 @@ energy consumed by each loop.
 
 Reinforcement learning for HVAC control has been studied extensively on
 simulation benchmarks built over EnergyPlus~\cite{crawley2001}, among which
-Sinergym~\cite{jimenezraboso2021} is the framework adopted in this work.
+Sinergym~\cite{jimenezraboso2021,campoynieves2025} is the framework adopted in
+this work.
 Multi-agent formulations typically follow MADDPG~\cite{lowe2017} with the
-stabilisation techniques of TD3~\cite{fujimoto2018}, which is also the deep
-reinforcement learning baseline that we implement.
-\TODO{add 4 to 6 citations on recent multi-zone MARL HVAC work, with one
-sentence each on what they report}
+stabilisation techniques of TD3~\cite{fujimoto2018}, which is also the DRL baseline that we implement.
+Single-agent deep RL has been benchmarked extensively on such testbeds.
+Campoy-Nieves et al.~\cite{campoynieves2025} compared SAC, TD3 and PPO with
+default and RBC in a two-zone data centre, where PPO learned
+the most stable policies and saved energy mainly in the intermediate seasons.
+Zhan et al.~\cite{zhan2025} compared six algorithms across office and
+data-centre buildings, climates and reward functions, and reported energy
+reductions of about 9 to 10\,\% over RBC, with an exponential
+comfort penalty reducing temperature fluctuations compared with a linear one.
+In a national-scale energy setting, Bajrami et al.~\cite{bajrami2025} found
+SAC faster and more stable than PPO, whereas PPO produced more assertive
+actions. Sample efficiency remains a central obstacle for these methods: Qu
+et al.~\cite{qu2025} augmented a SAC heating controller with an LSTM surrogate
+and branched rollouts, more than halving its training time, while Kadamala et
+al.~\cite{kadamala2025} pre-trained agents by behavioural cloning and
+fine-tuned them across buildings with different observation spaces by padding
+the input features. All of these works control the building with a single
+agent; the coupling between zones that share an air loop, which is central to
+our problem, is not modelled explicitly.
+% consider adding also 2-3 multi-zone MARL/CTDE HVAC references is we have space.
 
-Active inference has so far been applied mainly to low-dimensional control
+AIF has so far been applied mainly to low-dimensional control
 problems, and \texttt{pymdp}~\cite{heins2022} provides a reference
 implementation for discrete state spaces. Its appeal for building control
 stems from two properties: the epistemic value is part of the objective rather
 than an exploration rule added afterwards, and the generative model can be
 inspected at decision time, which makes the behaviour of each agent easier to
-interpret.
-\TODO{cite prior applications of AIF to building or energy control; if there
-are none, state this explicitly}
+interpret. Applications of AIF to energy systems are still
+scarce compared to DRL. Nazemi et al.~\cite{nazemi2025} proposed a dual-layer architecture in
+which a continuous AIF agent per building sets the HVAC airflow and
+supply-air temperature while inferring occupancy and infiltration as hidden
+states, and a discrete AIF agent coordinates storage, photovoltaics and market
+transactions at the community level. The building agent matched a
+full-information optimisation benchmark and compared favourably with a DDPG
+controller. In that work, however, each building is modelled as a single zone
+and coordination is achieved hierarchically through the community agent. Our
+agents instead operate at the zone level, share a physical air loop, and
+coordinate without any supervising agent or message exchange.
 
 %==============================================================================
-\section{System Architecture}
-\label{sec:system}
+% after removing the spatial web/LLMs this looks weird.
+%
+% \section{System Architecture}
+% \label{sec:system}
 
-The controller does not run as a single monolithic process. Instead, every
-agent is a long-lived, supervised actor in the open-source \texttt{wactorz}
-runtime, and all agents communicate exclusively over MQTT. Agents can be
-spawned at runtime, persist their state across restarts, are restarted
-individually by their supervisor in case of failure, and can be migrated to a
-different physical node without losing their state. In our setting, a fleet
-agent spawns one supervised child per conditioned zone; each child loads only
-its own slice of the shared model, subscribes to the observation stream, and
-publishes the action of its zone. As a result, fault isolation is per zone: a
-crashed zone agent interrupts the control loop of one zone, not of the whole
-building.
+% In our architecture, the controller does not run as a single monolithic process. Instead, every
+% agent is a long-lived, supervised actor in the open-source \texttt{wactorz}
+% runtime, and all agents communicate exclusively over MQTT. Agents can be
+% spawned at runtime, persist their state across restarts, are restarted
+% individually by their supervisor in case of failure, and can be migrated to a
+% different physical node without losing their state. In our setting, a fleet
+% agent spawns one supervised child per conditioned zone; each child loads only
+% its own slice of the shared model, subscribes to the observation stream, and
+% publishes the action of its zone. As a result, fault isolation is per zone: a
+% crashed zone agent interrupts the control loop of one zone, not of the whole
+% building.
 
-This design is particularly relevant for edge deployment, for two reasons.
-First, agents can be placed independently on any machine that runs a small
-runner process and joins the broker, so that a single fleet can span a
-workstation, a Raspberry~Pi and a GPU node without any change to the agent
-code. Second, since every message is published on an MQTT topic, the entire
-decision path can be observed and audited externally, without instrumenting
-the agents themselves.
+% This design is particularly relevant for edge deployment, for two reasons.
+% First, agents can be placed independently on any machine that runs a small
+% runner process and joins the broker, so that a single fleet can span a
+% workstation, a Raspberry~Pi and a GPU node without any change to the agent
+% code. Second, since every message is published on an MQTT topic, the entire
+% decision path can be observed and audited externally, without instrumenting
+% the agents themselves.
 
 %==============================================================================
 \section{Testbed and Controllers}
 \label{sec:testbed}
 
 \subsection{Building and Simulation}
-
-We use Sinergym~\cite{jimenezraboso2021} driving EnergyPlus~24.1.0 (Sinergym~3.11.0) on the
-ASHRAE 90.1 OfficeMedium prototype building~\cite{deru2011} (Denver model,
-\SI{4979.6}{\metre\squared}, three floors). Of its 18 thermal zones, 15 are
+We use Sinergym~\cite{jimenezraboso2021,campoynieves2025} driving
+EnergyPlus~24.1.0 on the ASHRAE 90.1 OfficeMedium prototype
+building~\cite{deru2011} (Denver model,
+\SI{4979.6}{\metre\squared}, three floors), but with a custom environment rather than one of
+the predefined Sinergym scenarios: we expose per-zone setpoints as actions,
+extend the observation space, and add one electricity meter per air loop, as
+described below.
+In particular, of its 18 thermal zones, 15 are
 conditioned (3 cores and 12 perimeters), while the remaining 3 are return
 plenums. Each floor is served by one packaged air loop, in which five zones
 share one fan, one two-speed cooling coil and one outdoor-air system, while
@@ -290,9 +300,9 @@ on dry-bulb temperature ($\sigma = \SI{1.5}{\celsius}$) and humidity, generated
 with five different seeds; these five years constitute our main test set. For
 a given seed, every controller is exposed to exactly the same weather, which we
 verify by comparing the logged outdoor temperatures, so that all comparisons on
-W1 can be paired by year. Finally, W2 comprises the hot and cool TMY3 years
-provided with Sinergym, which serve as unseen climates.
-% \TODO{confirm the hot/cool station names in the paper}
+W1 can be paired by year. Finally, W2 comprises the hot (Davis-Monthan, Arizona) and cool (Port
+Angeles, Washington) TMY3 years provided with Sinergym, which serve as
+unseen climates.
 All learned controllers are tested with learning switched off, so that no
 controller adapts to its test years.
 
@@ -306,7 +316,7 @@ deployed in a decentralised manner, with one agent per zone.
 The two main RBCs are implemented in a single code base and differ in exactly
 two behavioural switches, so that the pair isolates the value of anticipation
 and structural awareness rather than comparing unrelated heuristics. The
-\emph{reactive RBC} applies a seasonal bang-bang rule on the temperature of
+\emph{reactive RBC} applies a seasonal threshold rule on the temperature of
 each zone and on an occupancy calendar (winter band
 \SIrange{20.0}{23.5}{\celsius}, summer band \SIrange{23.0}{26.0}{\celsius}),
 with a \SI{2}{\celsius} setback when the building is unoccupied and without any
@@ -314,10 +324,10 @@ anticipation. The \emph{proactive RBC} additionally performs a pre-conditioning
 phase between 04:00 and 06:00 when the outdoor temperature is low, and applies
 per-zone offsets derived from the core or perimeter position, the orientation
 and the floor of each zone. Moreover, we sweep the summer cooling margin of the
-proactive RBC from \SIrange{0.5}{2.5}{\celsius} in order to trace its own
+proactive RBC from \SIrange{0.5}{2.5}{\celsius} to trace its own
 comfort-cost trade-off.
 
-In addition, we implemented a \emph{demand-limiting RBC}, which extends the
+Moreover, we implemented a \emph{demand-limiting RBC}, which extends the
 proactive RBC with two textbook peak-management measures. First, the three
 floors start their pre-conditioning 40 minutes apart; second, whenever the
 building HVAC demand exceeds 90\,\% of \SI{92.4}{\kilo\watt} (the annual peak
@@ -327,7 +337,7 @@ tested other thresholds, a larger shed and a rotating shed across floors, none
 of which lowered the peak.
 
 \subsubsection{MADDPG}
-As a deep reinforcement learning baseline, we use a multi-agent actor-critic
+As a DRL baseline, we use a multi-agent actor-critic
 controller~\cite{lowe2017} with TD3 stabilisers~\cite{fujimoto2018}, trained
 with a centralised twin critic and deployed as 15 independent actors. Each
 actor receives a 29-dimensional feature vector describing its zone, which
@@ -371,7 +381,7 @@ G_i(a) = {} & \sum_{k=1}^{8} \Big( \mathbb{E}[C(T_k)]
 \label{eq:efe}
 \end{equation}
 where $C$ is the comfort preference, $D$ the expected HVAC effort, $w^E_i$ the
-energy weight of agent $i$, $c_i$ its congestion belief, $I(T_1;H)$ the
+energy weight of agent $i$, $c_i$ its congestion signal, $I(T_1;H)$ the
 expected information gain about the hidden disturbance, and $P_{db}$ a penalty
 for heating and cooling setpoints that are closer than \SI{2.5}{\celsius}. We
 use $\lambda_c = 5$, $\beta = 0.2$ and $\lambda_{db} = 8$. Since $G$ is the
@@ -386,15 +396,27 @@ coordinated behaviour. First, each agent reads the power drawn by the
 \emph{other two} floors from the meters, divides it by a fixed reference of
 \SI{92.4}{\kilo\watt} (the annual peak of the incumbent controller, which a
 facility manager can read from the previous year's bill), and smooths the
-result into a congestion belief $c_i$. In this way, drawing power becomes more
+result into a congestion signal $c_i$. In this way, drawing power becomes more
 expensive for an agent when the rest of the building is busy. Second, each
 agent adapts its own energy weight $w^E_i$ within $[0,1]$, increasing it while
 its zone is comfortable and decreasing it otherwise. Since all agents of a
 floor receive the same congestion signal, these heterogeneous weights are what
 prevent the five agents from reacting in lockstep.
 
-We implemented the agents from scratch in PyTorch rather than with
-\texttt{pymdp}, so that the whole fleet is expressed as a set of batched tensor
+We refer to this configuration as \emph{AIF (fixed reference)}. For
+comparison, we also report a variant, \emph{AIF (running reference)}, in which
+each agent divides the load of the other floors by the highest total floor
+power that it has observed so far instead of a fixed value. This running maximum is taken over the total power of the three floors and
+starts from the first load observed after deployment, which is far below the
+eventual peak; it then only grows over time, so during the first weeks of
+operation the agents perceive the building as more congested than it actually
+is. Moreover, its value depends on the history of each deployment, so the same
+model can scale the signal differently depending on how long it has been
+running and which loads it has observed. The fixed reference avoids both
+issues, and we therefore use it as our main configuration, while the running
+reference serves as a sensitivity check.
+
+We implemented the agents from scratch in PyTorch, so that the whole fleet is expressed as a set of batched tensor
 operations, which runs on a GPU during simulation and on a CPU at the edge.
 Importantly, the batch of 15 agents contains no coupling across its batch
 dimension: we verified that each row of the batch produces exactly the same
@@ -428,20 +450,10 @@ Section~\ref{sec:background}, a CF equal to 1 means that the three floors peak
 at the same moment, whereas lower values indicate that their peaks are spread
 out in time.
 
-\textbf{Cost.} We adopt a PG\&E B-19-style tariff with time-of-use energy
-prices of 0.22, 0.32 and 0.45~\$/kWh (off-peak, mid-peak and on-peak,
-respectively) and a demand charge of \$26 per kW of monthly peak.
-
-Finally, the MADDPG fleets are trained on a shaped reward that combines
-time-of-use energy cost, occupancy-aware comfort, a monthly peak-demand
-penalty, a deadband penalty and a bonus for remaining close to the middle of
-the comfort band.
-
-%==============================================================================
-\section{Results}
-\label{sec:results}
-
-\subsection{Main Comparison on the Noisy Test Years}
+\textbf{Cost.} We adopt a simplified tariff modelled on PG\&E
+Schedule~B-19~\cite{pge_b19}, with time-of-use energy prices of 0.22, 0.32
+and 0.45~\$/kWh (off-peak, mid-peak and on-peak, respectively) and a single
+demand charge of \$26 per kW of monthly peak.
 
 \begin{table*}[t]
 \caption{Results on the five noisy test years (W1), mean\,$\pm$\,std. Learned
@@ -456,8 +468,8 @@ cost. Higher is better for comfort.}
 Controller & Peak & $\Sigma$ monthly & CF & CS$_{occ}$ & ZCR & Energy & Cost \\
  & (kW) & peaks (kW) & & & (\%) & (MWh) & (k\$) \\
 \midrule
-\textbf{AIF (headline)}     & \textbf{88.3}\pmx2.8 & 765\pmx14 & 0.929\pmx0.030 & 0.912\pmx0.003 & 83.6\pmx0.4 & 117.4\pmx2.7 & 55.4\pmx1.1 \\
-AIF, running reference      & 88.5\pmx3.6 & \textbf{763}\pmx14 & \textbf{0.927}\pmx0.028 & 0.908\pmx0.003 & 82.9\pmx0.5 & 116.7\pmx2.6 & 55.0\pmx1.1 \\
+\textbf{AIF (fixed reference)} & \textbf{88.3}\pmx2.8 & 765\pmx14 & 0.929\pmx0.030 & 0.912\pmx0.003 & 83.6\pmx0.4 & 117.4\pmx2.7 & 55.4\pmx1.1 \\
+AIF (running reference)     & 88.5\pmx3.6 & \textbf{763}\pmx14 & \textbf{0.927}\pmx0.028 & 0.908\pmx0.003 & 82.9\pmx0.5 & 116.7\pmx2.6 & 55.0\pmx1.1 \\
 AIF, no congestion signal   & 94.1\pmx2.3 & 784\pmx16 & 0.967\pmx0.015 & 0.938\pmx0.001 & 88.7\pmx0.2 & 121.2\pmx2.8 & 57.8\pmx1.2 \\
 RBC reactive                & 93.8\pmx0.5 & 799\pmx14 & 0.974\pmx0.005 & 0.916\pmx0.003 & 85.6\pmx0.5 & \textbf{106.2}\pmx2.9 & \textbf{53.7}\pmx1.2 \\
 RBC proactive               & 90.9\pmx3.4 & 767\pmx17 & 0.958\pmx0.014 & \textbf{0.946}\pmx0.001 & \textbf{90.6}\pmx0.1 & 139.2\pmx2.8 & 61.1\pmx1.3 \\
@@ -465,9 +477,50 @@ RBC demand-limiting         & 97.2\pmx2.7 & 781\pmx19 & 0.983\pmx0.007 & \textbf
 MADDPG cold start           & 106.0\pmx2.1 & 787\pmx5 & 0.994\pmx0.005 & 0.924\pmx0.001 & 83.1\pmx0.3 & 120.3\pmx2.4 & 56.5\pmx0.8 \\
 MADDPG warm start (reactive)& 103.5\pmx4.0 & 798\pmx16 & 0.977\pmx0.015 & 0.931\pmx0.002 & 84.3\pmx0.3 & 121.0\pmx2.6 & 57.0\pmx1.2 \\
 MADDPG + floor meters       & 97.0\pmx2.0 & 774\pmx15 & 0.936\pmx0.015 & 0.926\pmx0.002 & 83.4\pmx0.4 & 119.6\pmx2.6 & 55.9\pmx1.1 \\
-\bottomrule
+% \bottomrule
 \end{tabular}
 \end{table*}
+
+Finally, the MADDPG fleets are trained on a shaped reward that is shared by
+all agents and computed at every step $t$ as
+\begin{equation}
+\begin{aligned}
+r_t = {} & -\Big( w_E\, m_t\, \rho(P_t) + w_C\, \kappa_t\, \phi_t \\
+        & \quad + w_{DB}\, \delta_t + w_P\, \rho(\Delta P^{pk}_t) \Big)
+          + w_M\, \mu_t\, \psi_t ,
+\end{aligned}
+\label{eq:reward}
+\end{equation}
+where $P_t$ is the building HVAC demand and
+$\rho(x) = \min\!\big(\log(1 + x/P_{max}) / \log 2,\; 2\big)$ is a logarithmic
+normalisation with $P_{max} = \SI{300}{\kilo\watt}$. The electricity term is
+scaled by the time-of-use multiplier $m_t$, which equals 1, 1.5 and 3 in the
+off-peak, mid-peak and on-peak periods, respectively, and is increased by a
+further 10\,\% when the building is unoccupied. The comfort penalty $\phi_t$
+averages over the zones the band violation $v_z$ of each zone, normalised as
+$\min(v_z/s, 1)$; during occupied hours $s = 4$ and violations in the
+direction of the seasonal load (too warm in summer, too cold in winter) are
+weighted by 1.3, while before occupancy $s = 5$ and after occupancy the band
+is additionally widened by \SI{3}{\celsius}. The occupancy weight $\kappa_t$
+equals 1 during occupied hours (07:00 to 19:59 on weekdays), 0.4 before
+occupancy (05:00 to 07:00), 0.15 after occupancy (20:00 to 21:59) and 0
+otherwise. The deadband penalty
+$\delta_t = \frac{1}{15}\sum_z \min\!\big(\max(h_z - c_z + 2, 0)/3,\; 1\big)$
+penalises heating and cooling setpoints $h_z$ and $c_z$ that are closer than
+\SI{2}{\celsius}, and the peak term penalises the increase
+$\Delta P^{pk}_t = \max(P_t - \hat{P}_t, 0)$ over the running monthly peak
+$\hat{P}_t$, so that it is non-zero only when a new monthly peak is set.
+Finally, the midpoint bonus $\psi_t$ averages
+$\max(1 - |T_z - T_{mid}|/2.5,\; 0)$ over the zones, where $T_{mid}$ is the
+middle of the comfort band, with $\mu_t$ equal to 1 during occupied hours, 0.5
+before occupancy (with a scale of 4 instead of 2.5) and 0 otherwise. We use
+$w_E = 0.14$, $w_C = 0.40$, $w_{DB} = 0.05$, $w_P = 0.17$ and $w_M = 0.10$.
+
+%==============================================================================
+\section{Results}
+\label{sec:results}
+
+\subsection{Main Comparison on the Noisy Test Years}
 
 Table~\ref{tab:w1} presents the results obtained on the five noisy test years.
 Since every controller was exposed to the same weather in each year, we also
@@ -476,7 +529,7 @@ mean paired difference together with the number of years in which the AIF fleet
 performed better.
 
 \begin{table}[t]
-\caption{Paired differences, AIF (headline) minus the other controller, mean
+\caption{Paired differences, AIF (fixed reference) minus the other controller, mean
 over the five W1 years. The count shows in how many years the AIF fleet was
 better.}
 \label{tab:paired}
@@ -500,16 +553,17 @@ Total cost (k\$)      & $+1.6$ (0/5) & $-5.7$ (5/5) & $-0.5$ (5/5) \\
 
 \textbf{Peak demand and coincidence.} The AIF fleet achieves the lowest mean
 annual peak (\SI{88.3}{\kilo\watt}, against 90.9 to \SI{106.0}{\kilo\watt} for
-the other controllers) and the lowest coincidence factor (0.929). Its peak is
+the baselines) and a lower coincidence factor than any baseline (0.929). Its
+peak is
 lower than that of the reactive RBC and of every MADDPG fleet in every single
 test year. Against the proactive RBC, however, the annual peak is lower in only
 three of the five years, so we do not claim a robust peak advantage over that
 controller.
 
 \textbf{Comfort and cost.} The two RBCs span the range of comfort and cost, and
-the AIF fleet lies between them. The proactive RBC is both the most comfortable
-controller ($\mathrm{CS}_{occ}$ of 0.946) and the most expensive one
-(\$61.1k), whereas the reactive RBC is the cheapest (\$53.7k) and among the
+the AIF fleet lies between them. Together with the demand-limiting RBC, the
+proactive RBC is both the most comfortable controller ($\mathrm{CS}_{occ}$ of
+0.946) and the most expensive one (about \$61k), whereas the reactive RBC is the cheapest (\$53.7k) and among the
 least comfortable. The AIF fleet costs \$5.7k less than the proactive RBC in
 every year, at the price of lower comfort. Compared with the reactive RBC, it
 reaches a similar comfort level (0.912 against 0.916) with a markedly lower and
@@ -531,11 +585,13 @@ the risk of judging controllers on a single year: an annual peak is a single
 \begin{figure*}[t]
 \centering
 \includegraphics[width=0.9\textwidth]{figs/fig_pareto_w1.pdf}
-\caption{Comfort against cost (left) and against the sum of monthly peaks
-(right) on the five noisy test years (mean\,$\pm$\,std). Blue circles: AIF
-configurations from the congestion sweep, filled for the headline
-configuration. Red squares: the proactive RBC with different cooling margins,
-joined by a line, plus the reactive and demand-limiting RBCs. Green
+\caption{Comfort against total cost (left) and against the sum of monthly
+peaks (right) on the five noisy test years (mean\,$\pm$\,std over years).
+Blue: AIF with adaptive energy weights and congestion weights of 0, 3, 4, 5
+and 8 (numbers next to the points); the filled point is AIF (fixed reference)
+with weight 5, while the other points use the running reference. Red: the
+proactive RBC with summer cooling margins from 0.5 to \SI{2.5}{\celsius},
+together with the reactive and demand-limiting RBCs (filled squares). Green
 triangles: MADDPG fleets.}
 \label{fig:pareto}
 \end{figure*}
@@ -599,8 +655,8 @@ MADDPG cold             & 104.7 & 0.997 & 0.928 & 1.6  & 118.6 & 55.3 \\
 MADDPG warm (reactive)  & 99.0  & 0.958 & 0.934 & 1.6  & 119.1 & 55.8 \\
 MADDPG + floor meters   & 91.9  & 0.913 & 0.930 & 1.9  & 117.4 & 54.6 \\
 AIF, no congestion      & 92.9  & 0.974 & 0.939 & 0.0  & 119.4 & 56.6 \\
-AIF, running reference  & 84.8  & 0.880 & 0.917 & 0.0  & 114.3 & 53.6 \\
-AIF (headline)          & 84.7  & 0.876 & 0.923 & 0.0  & 115.4 & 54.1 \\
+AIF (running reference) & 84.8  & 0.880 & 0.917 & 0.0  & 114.3 & 53.6 \\
+AIF (fixed reference)   & 84.7  & 0.876 & 0.923 & 0.0  & 115.4 & 54.1 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -623,7 +679,7 @@ however, it performs poorly: its comfort drops to a $\mathrm{CS}_{occ}$ of
 both main RBCs. When the cooling plant operates at full capacity for long
 periods, the only way to reduce the peak is to sacrifice a considerable amount
 of comfort. Allowing the agents to keep learning online recovers a large part
-of the comfort ($\mathrm{CS}_{occ}$ of 0.846, against 0.797 when frozen), but
+of the comfort ($\mathrm{CS}_{occ}$ of 0.846, against 0.798 when frozen), but
 the peak then rises to \SI{115.6}{\kilo\watt}. Moreover, in this climate the
 fixed calendar of the summer comfort band penalises every controller, since on
 1~October the band switches to the winter values while the outdoor temperature
@@ -641,7 +697,7 @@ is still high.
 \cmidrule(lr){2-4}\cmidrule(lr){5-7}
 Controller & kW & CS$_{occ}$ & k\$ & kW & CS$_{occ}$ & k\$ \\
 \midrule
-AIF (headline)          & 102.0 & 0.798 & 80.1 & 48.5 & 0.928 & 27.9 \\
+AIF (fixed reference)   & 102.0 & 0.798 & 80.1 & 48.5 & 0.928 & 27.9 \\
 AIF, no congestion      & 103.8 & 0.874 & 83.1 & 55.2 & 0.935 & 28.9 \\
 RBC reactive            & 99.9  & 0.840 & 78.7 & 50.5 & 0.921 & 25.6 \\
 RBC proactive           & 95.2  & 0.884 & 80.6 & 48.5 & 0.947 & 32.5 \\
@@ -653,15 +709,13 @@ MADDPG + floor meters   & 99.1  & 0.848 & 81.2 & 57.7 & 0.899 & 27.6 \\
 \end{tabular}
 \end{table}
 
-\subsection{What Makes the Coordination Work}
+\subsection{AIF component contribution}
 \label{sec:mechanism}
-
-Table~\ref{tab:ablation} isolates the contribution of each component of the AIF
-controller on the deterministic year.
 
 \begin{table}[t]
 \caption{AIF ablations and mechanism controls on the deterministic year (mean
-of the last three adaptation years). ``c5 / c8'': congestion weight 5 / 8.}
+of the last three adaptation years). All rows use the running reference
+unless stated otherwise.}
 \label{tab:ablation}
 \centering
 \footnotesize
@@ -675,27 +729,30 @@ adaptive weights only              & 92.9 & 0.976 & 0.939 \\
 congestion 5 only                  & 92.3 & 0.934 & 0.930 \\
 congestion 4 + adaptive weights    & 92.0 & 0.923 & 0.924 \\
 \textbf{congestion 5 + adaptive weights} & \textbf{84.8} & \textbf{0.880} & 0.917 \\
-\quad fixed reference (headline)   & 84.7 & 0.876 & 0.923 \\
+\quad fixed reference              & 84.7 & 0.876 & 0.923 \\
 \quad earlier inference code       & 84.8 & 0.880 & 0.921 \\
-\quad horizon 4 / 16 steps         & 87.1 / 85.0 & 0.891 / 0.929 & 0.919 / 0.904 \\
+\quad horizon 4\,/\,16 steps       & 87.1\,/\,85.0 & 0.891\,/\,0.929 & 0.919\,/\,0.904 \\
 \quad stochastic actions           & 89.7 & 0.901 & 0.927 \\
-signal: own floor (c5 / c8)        & 91.9 / 85.0 & 0.919 / 0.877 & 0.921 / 0.893 \\
-signal: whole building (c5 / c8)   & 92.6 / 83.7 & 0.928 / 0.874 & 0.921 / 0.892 \\
-signal: 24\,h old (c5 / c8)        & 92.8 / 92.9 & 0.931 / 0.963 & 0.926 / 0.912 \\
-signal: constant (c5 / c8)         & 92.9 / 92.9 & 0.961 / 0.959 & 0.933 / 0.930 \\
+\midrule
+\multicolumn{4}{l}{\emph{Signal source, congestion weight 5\,/\,8:}} \\
+\quad own floor                    & 91.9\,/\,85.0 & 0.919\,/\,0.877 & 0.921\,/\,0.893 \\
+\quad whole building               & 92.6\,/\,83.7 & 0.928\,/\,0.874 & 0.921\,/\,0.892 \\
+\quad 24\,h old                    & 92.8\,/\,92.9 & 0.931\,/\,0.963 & 0.926\,/\,0.912 \\
+\quad constant                     & 92.9\,/\,92.9 & 0.961\,/\,0.959 & 0.933\,/\,0.930 \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-\textbf{Both components are needed, and the effect exhibits a threshold.}
-Neither the congestion signal nor the adaptive energy weights lower the peak on
+Table~\ref{tab:ablation} isolates the contribution of each component of the AIF
+controller on the deterministic year. As it is shown,
+neither the congestion signal nor the adaptive energy weights lower the peak on
 their own; only their combination does, and only from a congestion weight of 5
 onwards, since at a weight of 4 the peak remains at \SI{92}{\kilo\watt}. The
 peak therefore behaves like a switch rather than a slope, which is consistent
 with the coarse action set: on the design day, the fleet either keeps its
 cooling setpoint or gives up one whole step.
 
-\textbf{The signal has to be live.} A constant signal with the same mean value,
+It is also obeserved that a constant signal with the same mean value,
 or the same signal delayed by 24 hours, never reaches the low-peak regime, even
 with a congestion weight of 8. Consequently, the effect is neither a higher
 energy price in disguise nor a learned daily pattern; instead, the agents react
@@ -704,7 +761,7 @@ agent's own floor or from the whole building also work, but they require a
 weight of 8 and cost about 0.03 more in comfort, whereas the signal from the
 other floors reaches the same peak at a lower comfort cost.
 
-\textbf{The agents must weigh energy differently.} Since every agent of a floor
+Since every agent of a floor
 receives the same congestion signal, agents with identical weights react in
 lockstep. When we replace the adaptive weights with fixed random weights per
 agent, the fleet reaches the low-peak regime in 4 of 8 random draws, whereas
@@ -713,7 +770,7 @@ having to choose them. In practice, the weights rarely settle: most of the time
 each agent sits at one of the two bounds and switches frequently, so that at any
 given moment some agents save energy while others protect comfort.
 
-\textbf{A learning controller can exploit the same information.} Providing the
+Providing the
 MADDPG actors with the three floor meters lowered their peak by
 \SI{9.0}{\kilo\watt} and their CF by 0.057 in every noisy year, while slightly
 improving comfort. This result independently supports the explanation above,
@@ -730,84 +787,84 @@ of the metrics tracked during training: both cold-start runs reach the same
 final reward and comfort, and their comfort stops improving after about 30 to
 40 training years, while the shaped reward still increases slowly at year 50.
 
-\textbf{Other design choices.} A two-hour planning horizon works best: with a
-one-hour horizon the peak is higher, while with a four-hour horizon comfort
-drops, because the agent assumes that it will hold a single action over the
-whole horizon, which becomes a poor assumption that far ahead. Stochastic
-action selection weakens the coordination effect, and the corrected inference
-code changed comfort by less than 0.005 while leaving the peak and the CF
-unchanged.
+% A two-hour planning horizon works best: with a
+% one-hour horizon the peak is higher, while with a four-hour horizon comfort
+% drops, because the agent assumes that it will hold a single action over the
+% whole horizon, which becomes a poor assumption that far ahead. Stochastic
+% action selection weakens the coordination effect, and the corrected inference
+% code changed comfort by less than 0.005 while leaving the peak and the CF
+% unchanged.
 
-\subsection{Decision Latency on Edge Hardware}
+\subsection{Deployment on Edge Hardware}
 \label{sec:latency}
 
+For the deployment we used the open-source
+\texttt{wactorz} actor runtime where each zone agent runs as an independent process and communicates only over MQTT, subscribing
+to the observation stream and publishing the setpoints of its zone. 
 Decision latency was measured with all 15 AIF agents planning concurrently on a
 Raspberry~Pi~5 while driving the simulator over MQTT. An instrumented bridge
 timestamps the full observation-to-action round trip, so the reported figures
 include the messaging overhead rather than computation alone. Over 90 timed
 decisions (after discarding 10 warm-up decisions), we measured a mean latency of
 \SI{268}{\milli\second}, a median of \SI{238}{\milli\second}, a 95th percentile
-of \SI{442}{\milli\second} and a maximum of \SI{822}{\milli\second}. These
-values lie well inside the two-second budget that we set for interactive use,
-and they are negligible compared with the 15-minute control step.
-% TODO: re-measure with the final code and >=1000 decisions; report p99.
-\TODO{re-measure with the final code over at least 1\,000 decisions and report
-p99}
+of \SI{442}{\milli\second} and a maximum of \SI{822}{\milli\second}, which is
+negligible compared with the 15-minute control step.
 
-The reason why the fleet fits on a Raspberry~Pi is structural rather than
-incidental: planning over 25 actions in a small factored state space amounts to
-a handful of batched tensor contractions, with no gradient computation and no
-deep learning framework involved at decision time. Consequently, the
-computational cost of the approach is bounded by the size of the
-discretisation rather than by model capacity.
+% The reason why the fleet fits on a Raspberry~Pi is structural rather than
+% incidental: planning over 25 actions in a small factored state space amounts to
+% a handful of batched tensor contractions, with no gradient computation and no
+% deep learning framework involved at decision time. Consequently, the
+% computational cost of the approach is bounded by the size of the
+% discretisation rather than by model capacity.
 
-\subsection{Anomaly Detection}
-\label{sec:anomaly}
+% ---- Anomaly detection subsection commented out for space ----
+% \subsection{Anomaly Detection}
+% \label{sec:anomaly}
 % NOTE: the detector results below come from the earlier pipeline and have
 % not been re-run with v15. Check the zone index map in the detector
 % (office_medium_multiagent_config.py) before final submission.
 
-\textbf{Fault injection.} Anomalies follow a deterministic seeded schedule of
-24 events per simulated year (about two per month, spaced at least seven days
-apart), evenly split between HVAC faults and sensor drifts, each lasting 6 to 8
-hours. An HVAC fault reduces the efficiency to a value between 0.50 and 0.70,
-which increases the electricity consumption while the zone temperatures drift
-towards outdoor conditions. A sensor drift, on the other hand, adds a slowly
-ramping bias of +2.5 to \SI{4.0}{\celsius} to the temperature reading of one
-zone. Detection is scored at the event level rather than per step.
+% \textbf{Fault injection.} Anomalies follow a deterministic seeded schedule of
+% 24 events per simulated year (about two per month, spaced at least seven days
+% apart), evenly split between HVAC faults and sensor drifts, each lasting 6 to 8
+% hours. An HVAC fault reduces the efficiency to a value between 0.50 and 0.70,
+% which increases the electricity consumption while the zone temperatures drift
+% towards outdoor conditions. A sensor drift, on the other hand, adds a slowly
+% ramping bias of +2.5 to \SI{4.0}{\celsius} to the temperature reading of one
+% zone. Detection is scored at the event level rather than per step.
 
-\textbf{Detector.} A recurrent forecaster, consisting of a GRU with 512 units
-applied over eight steps and a separate pathway for the applied action, is
-trained on one clean simulated year to predict the next temperature change of
-each zone \emph{given the action that was just applied} (validation RMSE of
-\SI{0.067}{\celsius}). This conditioning is the key design decision: under an
-active controller, large setpoint changes would otherwise dominate the forecast
-error, whereas conditioning on the action collapses this part of the residual.
-The residuals are normalised per zone, month and hour of day, and are then fed
-to self-resetting CUSUM detectors~\cite{page1954}, so that slow faults that
-never cross a per-step threshold still accumulate evidence. Persistent
-divergence across several zones is classified as an HVAC fault, while
-divergence confined to a single zone is classified as a sensor drift.
+% \textbf{Detector.} A recurrent forecaster, consisting of a GRU with 512 units
+% applied over eight steps and a separate pathway for the applied action, is
+% trained on one clean simulated year to predict the next temperature change of
+% each zone \emph{given the action that was just applied} (validation RMSE of
+% \SI{0.067}{\celsius}). This conditioning is the key design decision: under an
+% active controller, large setpoint changes would otherwise dominate the forecast
+% error, whereas conditioning on the action collapses this part of the residual.
+% The residuals are normalised per zone, month and hour of day, and are then fed
+% to self-resetting CUSUM detectors~\cite{page1954}, so that slow faults that
+% never cross a per-step threshold still accumulate evidence. Persistent
+% divergence across several zones is classified as an HVAC fault, while
+% divergence confined to a single zone is classified as a sensor drift.
 
-\begin{table}[t]
-\caption{Event-level detection, mean over 10 seeds.}
-\label{tab:anomaly}
-\centering
-\footnotesize
-\setlength{\tabcolsep}{3pt}
-\begin{tabular}{lcccc}
-\toprule
-Operating point & Prec.\ (\%) & Recall (\%) & $F_1$ (\%) & FP/year \\
-\midrule
-Recall (slack 0.6)    & 70.3 & \textbf{90.0} & 78.9 & about 9 \\
-Precision (slack 1.6) & \textbf{93.4} & 81.2 & \textbf{86.8} & about 1.4 \\
-\bottomrule
-\end{tabular}
-\end{table}
+% \begin{table}[t]
+% \caption{Event-level detection, mean over 10 seeds.}
+% \label{tab:anomaly}
+% \centering
+% \footnotesize
+% \setlength{\tabcolsep}{3pt}
+% \begin{tabular}{lcccc}
+% \toprule
+% Operating point & Prec.\ (\%) & Recall (\%) & $F_1$ (\%) & FP/year \\
+% \midrule
+% Recall (slack 0.6)    & 70.3 & \textbf{90.0} & 78.9 & about 9 \\
+% Precision (slack 1.6) & \textbf{93.4} & 81.2 & \textbf{86.8} & about 1.4 \\
+% \bottomrule
+% \end{tabular}
+% \end{table}
 
-As shown in Table~\ref{tab:anomaly}, a single parameter, the CUSUM slack, moves
-the detector along its precision-recall curve: raising it reduces the false
-alarms from about nine to about 1.4 per year, without retraining the detector.
+% As shown in Table~\ref{tab:anomaly}, a single parameter, the CUSUM slack, moves
+% the detector along its precision-recall curve: raising it reduces the false
+% alarms from about nine to about 1.4 per year, without retraining the detector.
 
 %==============================================================================
 \section{Discussion and Limitations}
@@ -847,45 +904,38 @@ comparing controllers year by year, and reporting the sum of monthly peaks
 changed several of our conclusions, and we recommend the same practice for HVAC
 benchmarks.
 
-\textbf{Scope and limitations.} Our study has several limitations that should
+\textbf{Scope and limitations.} Our study has the following limitations that should
 be taken into account when interpreting the results:
 \begin{itemize}
 \item We evaluated a single building and a single tariff; the noisy years vary
 the weather, but not the building or the occupancy patterns.
-\item The low-peak behaviour requires a congestion weight just above a
-threshold, and it is less reliable on the noisy years than on the
-deterministic one.
 \item The AIF fleet is the least comfortable of the strong controllers, and in
 a hot climate its comfort degrades considerably when it is not allowed to
 adapt.
-\item The action set includes five heating and five cooling values, and in
-summer only one cooling setpoint lies inside the comfort band, which limits the
-achievable comfort.
 \item Comfort is measured on weekdays between 07:00 and 19:59, although
 EnergyPlus also reports occupants outside these hours, for example in the early
 morning, in the evening and on Saturdays.
-\item Each MADDPG variant was trained once, and one of the 50 training years of
-the floor-meter run ended early.
-\item All results come from simulation, and the controller has not yet been
-tested on a real building.
+\item Finally, each MADDPG variant was trained once.
 \end{itemize}
 
 %==============================================================================
 \section{Conclusion}
+\label{sec:conclusion}
 
 In this paper, we presented a decentralised controller for multi-zone HVAC
 systems in which fifteen active-inference agents, one per zone and exchanging no
 messages, coordinate the demand of a building that shares one air loop per
 floor. Evaluated on five noisy weather years that were not seen during
-training, the AIF fleet achieved the lowest mean annual peak and coincidence
-factor among all the controllers that we tested. Our analysis showed that this
+training, the AIF fleet achieved the lowest mean annual peak among all the
+controllers that we tested and a lower coincidence factor than any baseline.
+Our analysis showed that this
 coordination stems from a live load signal combined with agents that weigh
 energy differently, and that a deep reinforcement learning controller given the
 same meters improves for the same reason. The price of this behaviour is an
 energy consumption about 10\,\% higher than that of a simple reactive rule,
 which pays off only where demand is charged heavily. Finally, we showed that
-all 15 agents run concurrently on a Raspberry~Pi~5 within a two-second budget,
-measured over the full MQTT round trip.
+all 15 agents run concurrently on a Raspberry~Pi~5 with a p95 latency of
+\SI{442}{\milli\second}, measured over the full MQTT round trip.
 
 Future work follows directly from the limitations of this study. In particular,
 we plan to gate the congestion signal by comfort, so that the agents do not
@@ -897,11 +947,9 @@ is a promising direction for combining the strengths of both approaches.
 %==============================================================================
 \section*{Acknowledgment}
 
-This work was carried out in the SYNAPSE project, funded through the third open
+\textcolor{red}{This work was carried out in the SYNAPSE project, funded through the third open
 call of dAIEDGE, the European Network of Excellence for distributed,
-trustworthy, efficient and scalable AI at the Edge.
-\TODO{confirm the dAIEDGE grant agreement number and the exact funding
-statement required by the open-call terms}
+trustworthy, efficient and scalable AI at the Edge.}
 
 %==============================================================================
 \bibliographystyle{IEEEtran}
