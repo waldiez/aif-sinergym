@@ -1,0 +1,91 @@
+{
+ "label": "tr_rbc_proactive_hot",
+ "script": "rbc_v2.py",
+ "config": {
+  "variant": "proactive",
+  "weather": "hot",
+  "seed": 0,
+  "weather_variability": 0.0,
+  "cool_margin": 1.0,
+  "dl_ref_W": 92400.0,
+  "dl_limit_frac": 0.9,
+  "dl_release_frac": 0.9,
+  "dl_shed_C": 1.0,
+  "dl_mode": "global",
+  "stagger_min": 40,
+  "floor_power_idx": "92,93,94",
+  "floor_power_scale": 0.0011111,
+  "proactive_module": "proactive_rbc",
+  "reactive_module": "rbc_office_reactive",
+  "out_dir": "/home/consert/VagMachineLearning/sinergym/new_era/synapse_deliverable/ab_runs/tr_rbc_proactive_hot",
+  "results_json": null,
+  "label": "tr_rbc_proactive_hot",
+  "episodes": 1
+ },
+ "weather": "hot",
+ "seed": 0,
+ "weather_variability": 0.0,
+ "started_fresh": true,
+ "loaded_from": null,
+ "metrics_utils_md5": "e2c97847a4",
+ "episodes": [
+  {
+   "episode": 1,
+   "peak_kW": 95.2156953125,
+   "LF": 0.22650020118292055,
+   "energy_kWh": 188921.43750190354,
+   "en_cost": 58620.00620205596,
+   "dem_cost": 21940.31653125003,
+   "tot_cost": 80560.32273330599,
+   "CS": 0.8953312999910705,
+   "CS_occ": 0.8844240319094685,
+   "ZCR": 81.98005698005699,
+   "mean_dev": 0.23325870724532066,
+   "db_viol": 5.614535768645357,
+   "custom_reward": -337.12497214675733,
+   "linear_reward": -91890.18741782618,
+   "hourly_reward": -87421.72070901643,
+   "monthly_peak_kW": {
+    "1": 56.5054453125,
+    "2": 36.0345390625,
+    "3": 52.442765625,
+    "4": 74.0691171875,
+    "5": 81.290671875,
+    "6": 95.2156953125,
+    "7": 89.0364453125,
+    "8": 88.4389453125,
+    "9": 78.7758984375,
+    "10": 89.939359375,
+    "11": 60.21716796875,
+    "12": 41.89227734375
+   },
+   "sum_monthly_peaks_kW": 843.858328125,
+   "peak_event": {
+    "kW": 95.2156953125,
+    "step": 17151,
+    "month": 6,
+    "day": 28,
+    "hour": 15,
+    "outdoor_C": 42.0,
+    "floor_kW": [
+     31.890092207000002,
+     28.261515159800002,
+     34.2228755456
+    ],
+    "n_heating": 0,
+    "n_cooling": 9,
+    "n_band_lt2": 0
+   },
+   "override_rate": null,
+   "weather_fp": "5bcb76f9937e",
+   "wall_s": 36.57959866523743,
+   "CF": 0.9901134926339037,
+   "coincident_peak_kW": 94.37448291240001,
+   "floor_peaks_kW": [
+    32.832442783400005,
+    28.261515159800002,
+    34.2228755456
+   ]
+  }
+ ]
+}
