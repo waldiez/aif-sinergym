@@ -1,0 +1,19 @@
+# simulation outputs (large; the small result files are copied to results/)
+ab_runs/
+eplus-env-*/
+Eplus-env-*/
+preflight_v15/
+# MADDPG checkpoints contain multi-GB replay buffers; metadata goes to results/maddpg/
+checkpoint*/
+*.pt
+*.pkl
+*.npz
+# Python / LaTeX
+__pycache__/
+*.pyc
+paper/*.aux
+paper/*.bbl
+paper/*.blg
+paper/*.log
+paper/*.out
+paper/*.synctex.gz

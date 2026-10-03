@@ -1,0 +1,8 @@
+# Versions used for every result in the paper (see env/env_info.txt).
+# EnergyPlus 24.1.0 is installed separately (Sinergym 3.11 documentation).
+sinergym==3.11.0
+gymnasium==1.2.2
+numpy==2.4.1
+torch==2.7.1          # CUDA build used: 2.7.1+cu126; the CPU build also works
+matplotlib>=3.8       # figures
+openpyxl>=3.1         # optional: results.xlsx

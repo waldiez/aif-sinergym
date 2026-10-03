@@ -1,0 +1,7 @@
+date: 2026-10-03
+python 3.12.7 (/usr/local/bin/python3.12)
+sinergym 3.11.0
+EnergyPlus: EnergyPlus, Version 24.1.0-9d7789a3ac
+torch 2.7.1+cu126 | cuda 12.6 | gpu NVIDIA GeForce RTX 3090
+gymnasium 1.2.2 | numpy 2.4.1
+Linux-5.15.0-139-generic-x86_64-with-glibc2.35
