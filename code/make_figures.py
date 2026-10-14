@@ -94,7 +94,7 @@ def _curve(ax, root, prefix_fmt, items, key, sc, fam, fill_label=None):
 
 
 def fig_pareto(root, out, plt):
-    fig, axs = plt.subplots(1, 2, figsize=(7.2, 3.0))
+    fig, axs = plt.subplots(1, 2, figsize=(7.2, 3.4))
     for ax, key, ylab in ((axs[0], "tot_cost", "total cost (k$ / yr)"),
                           (axs[1], "sum_monthly_peaks_kW", "sum of monthly peaks (kW)")):
         sc = 1e-3 if key == "tot_cost" else 1.0
@@ -117,8 +117,12 @@ def fig_pareto(root, out, plt):
                 label="AIF, congestion weight 0 to 8")
     axs[0].plot([], [], "s-", color=STYLE["rbc"]["color"], mfc="white",
                 label="RBC proactive, cooling margin 0.5 to 2.5 $^\\circ$C")
-    axs[0].legend(fontsize=6, loc="upper left")
-    fig.tight_layout(); save(fig, out, "fig_pareto_w1")
+    axs[0].plot([], [], "s", color=STYLE["rbc"]["color"], label="RBC reactive / demand-limiting")
+    axs[0].plot([], [], "^", color=STYLE["mad"]["color"],
+                label="MADDPG (cold, warm reactive, + floor meters)")
+    h, l = axs[0].get_legend_handles_labels()
+    fig.legend(h, l, fontsize=6.5, loc="lower center", ncol=2, frameon=False)
+    fig.tight_layout(rect=(0, 0.11, 1, 1)); save(fig, out, "fig_pareto_w1")
 
 
 def fig_tariff(root, out, plt):
